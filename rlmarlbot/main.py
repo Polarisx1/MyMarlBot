@@ -183,25 +183,39 @@ class RLMarlbot:
 
     def start(self):
         print(Fore.LIGHTBLUE_EX + "Starting SDK..." + Style.RESET_ALL)
-        while True:
+
+        try:
+            self.sdk = RLSDK(hook_player_tick=True, pid=self.pid)
+        except Exception as e:
+            print(Fore.RED + "Failed to start SDK: ", e, Style.RESET_ALL)
+
+            if not self._auto_resolve_offsets():
+                print(
+                    Fore.RED
+                    + "Unable to resolve offsets automatically. Exiting."
+                    + Style.RESET_ALL
+                )
+                sys.exit(1)
+
+            print(
+                Fore.LIGHTYELLOW_EX
+                + "Retrying SDK initialization..."
+                + Style.RESET_ALL
+            )
+
             try:
                 self.sdk = RLSDK(hook_player_tick=True, pid=self.pid)
-                break
             except Exception as e:
-                print(Fore.RED + "Failed to start SDK: ", e, Style.RESET_ALL)
-                if not self._auto_resolve_offsets():
-                    print(
-                        Fore.LIGHTYELLOW_EX
-                        + "Retrying to start SDK in 5 seconds..."
-                        + Style.RESET_ALL
-                    )
-                    time.sleep(5)
-                else:
-                    print(
-                        Fore.LIGHTYELLOW_EX
-                        + "Retrying SDK initialization..."
-                        + Style.RESET_ALL
-                    )
+                print(
+                    Fore.RED
+                    + "Retry after offset resolution failed: "
+                    + str(e)
+                    + Style.RESET_ALL
+                )
+                print(
+                    Fore.RED + "Unable to initialize SDK. Exiting." + Style.RESET_ALL
+                )
+                sys.exit(1)
 
         if self.minimap:
 
