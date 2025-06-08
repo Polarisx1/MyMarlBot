@@ -46,7 +46,7 @@ options:
 git clone https://github.com/Polarisx1/MyMarlBot
 
 # Change directory
-cd RLMarlbot
+cd MyMarlbot
 
 # Install dependencies
 poetry install
