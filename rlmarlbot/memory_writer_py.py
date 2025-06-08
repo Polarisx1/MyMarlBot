@@ -67,8 +67,12 @@ class MemoryWriter:
         if kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):
             while True:
                 if entry.szExeFile.lower() == process_name.lower():
-                    self.h_process = kernel32.OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, False, entry.th32ProcessID)
-                    found = self.h_process is not None
+                    self.h_process = kernel32.OpenProcess(
+                        PROCESS_VM_WRITE | PROCESS_VM_OPERATION,
+                        False,
+                        entry.th32ProcessID,
+                    )
+                    found = bool(self.h_process)
                     break
                 if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
                     break
