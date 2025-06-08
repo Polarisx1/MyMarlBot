@@ -4,6 +4,13 @@ import time
 import ctypes
 from ctypes import wintypes
 
+# Ensure wintypes has ULONG_PTR for compatibility with older Python versions
+if not hasattr(wintypes, "ULONG_PTR"):
+    if ctypes.sizeof(ctypes.c_void_p) == ctypes.sizeof(ctypes.c_ulong):
+        wintypes.ULONG_PTR = ctypes.c_ulong
+    else:
+        wintypes.ULONG_PTR = ctypes.c_ulonglong
+
 if os.name != "nt":
     raise OSError("memory_writer_py is only supported on Windows")
 
