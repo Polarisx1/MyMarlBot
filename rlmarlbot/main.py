@@ -216,7 +216,7 @@ class RLMarlbot:
 
         self.kickoff_seq = None
         self.kickoff_prev_time = 0
-        self.kickoff_game_state = GameState = None
+        self.kickoff_game_state = None
         self.kickoff_action = None
         self.kickoff_start_frame_num = 0
 
