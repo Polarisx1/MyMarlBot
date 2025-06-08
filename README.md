@@ -15,6 +15,7 @@ I recommend to look at the RLSDK-Python repository to understand how the bot wor
 - RocketLeague Epic (x64) running
 - Python 3.11.0 (x64)
 - Pyinstaller if you want to build the exe
+- RLSDK (rlsdk-python==0.4.2) is required to run the bot
 
 
 ## CLI Options
@@ -48,6 +49,8 @@ cd RLMarlbot
 
 # Install dependencies
 poetry install
+# Install RLSDK (required)
+pip install rlsdk-python==0.4.2
 
 # Enter poetry shell
 poetry shell
