@@ -4,3 +4,4 @@ functions.txt
 config.json
 __pycache__
 **/*.pyc
+.pytest_cache/
