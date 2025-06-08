@@ -1,4 +1,4 @@
-
+"""Mini map rendering utilities for RLBot SDK."""
 
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -11,8 +11,18 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket, PlayerInfo
 from rlsdk_python import RLSDK
 
 class MiniMap:
-    def __init__(self, sdk: RLSDK=None, player_index=0):
+    """Display a simplified top-down representation of the game field."""
 
+    def __init__(self, sdk: RLSDK = None, player_index: int = 0):
+        """Initialize the minimap instance.
+
+        Parameters
+        ----------
+        sdk : RLSDK | None
+            Instance of the RLSDK used to query game state.
+        player_index : int, default 0
+            Index of the player controlled by the bot.
+        """
         self.time = time.time()
 
         self.running = False
@@ -49,19 +59,31 @@ class MiniMap:
      
 
     
-    def set_game_tick_packet(self, game_tick_packet, player_index=0):
+    def set_game_tick_packet(self, game_tick_packet: GameTickPacket, player_index: int = 0) -> None:
+        """Provide the latest packet and enable the minimap display.
+
+        Parameters
+        ----------
+        game_tick_packet : GameTickPacket
+            Packet containing the latest game state.
+        player_index : int, default 0
+            Index of the player to highlight on the minimap.
+        """
         self.game_tick_packet = game_tick_packet
         self.player_index = player_index
         self.enable()
         
         
-    def disable(self):
+    def disable(self) -> None:
+        """Disable drawing of game elements."""
         self.disabled = True
         
-    def enable(self):
+    def enable(self) -> None:
+        """Enable drawing of game elements."""
         self.disabled = False
 
-    def update_scale_factor(self, new_width, new_height):
+    def update_scale_factor(self, new_width: int, new_height: int) -> None:
+        """Resize the minimap window while keeping the aspect ratio."""
         # Calculate new size while maintaining the aspect ratio
         new_ratio = new_width / new_height
         if new_ratio > self.aspect_ratio:
@@ -76,7 +98,8 @@ class MiniMap:
         self.scale_factor = new_width / self.initial_screen_width
         pygame.display.set_mode((new_width, new_height), pygame.RESIZABLE)
 
-    def world_to_screen(self, x, y):
+    def world_to_screen(self, x: float, y: float) -> tuple[float, float]:
+        """Convert world coordinates to screen coordinates."""
         # Ajustement du centre en considérant le padding
         center_x = self.max_world_x + self.padding
         center_y = self.max_world_y + self.padding
@@ -94,7 +117,8 @@ class MiniMap:
         screen_y = self.screen_height * location_y_rate
 
         return screen_x, screen_y
-    def main(self):
+    def main(self) -> None:
+        """Run the minimap event loop."""
         pygame.init()
         screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
 
@@ -180,8 +204,9 @@ class MiniMap:
         sys.exit()
         
         
-    def draw_info(self, screen):
-        gtp : GameTickPacket = self.game_tick_packet
+    def draw_info(self, screen: pygame.Surface) -> None:
+        """Display current game statistics on the top left."""
+        gtp: GameTickPacket = self.game_tick_packet
         
         # draw info on top left of the screen
         
@@ -237,8 +262,8 @@ class MiniMap:
         
 
 
-    def draw_field(self, screen):
-
+    def draw_field(self, screen: pygame.Surface) -> None:
+        """Render static field elements."""
         # Définition des points du terrain
         # Sommets du polygone: haut gauche, haut droite
         field = [
@@ -324,10 +349,8 @@ class MiniMap:
 
 
 
-    def draw_game_elements(self, screen, game_tick_packet: GameTickPacket):
-
-        
-       
+    def draw_game_elements(self, screen: pygame.Surface, game_tick_packet: GameTickPacket) -> None:
+        """Render cars, boost pads, and the ball."""
         cars = game_tick_packet.game_cars
         
         for car_index in range(0, game_tick_packet.num_cars):
