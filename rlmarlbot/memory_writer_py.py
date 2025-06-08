@@ -98,7 +98,8 @@ class MemoryWriter:
             )
 
         kernel32.CloseHandle(snapshot)
-        return bool(self.h_process)
+        found = bool(self.h_process)
+        return found
 
     def open_process_by_id(self, pid: int) -> bool:
         self.h_process = kernel32.OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, False, pid)
