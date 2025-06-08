@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rlmarlbot"
-version = "1.5.2"
+version = "1.6.1.dev1"
 description = ""
 authors = ["MarlburroW <nik0o@hotmail.com>"]
 readme = "README.md"

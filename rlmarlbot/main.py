@@ -46,7 +46,7 @@ import warnings
 warnings.simplefilter('default') 
 import traceback
 
-VERSION = "1.6.1-dev1"
+VERSION = "1.6.1.dev1"
 
 
 class RLMarlbot:
