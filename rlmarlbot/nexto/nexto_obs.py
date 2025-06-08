@@ -162,6 +162,17 @@ PLAYER_CAR_STATE_LENGTH = 13
 PLAYER_TERTIARY_INFO_LENGTH = 10
 PLAYER_INFO_LENGTH = 2 + 2 * PLAYER_CAR_STATE_LENGTH + PLAYER_TERTIARY_INFO_LENGTH
 
+# Indices for values within an encoded player's slice
+PLAYER_POS_SLICE = slice(2, 5)
+PLAYER_QUAT_SLICE = slice(5, 9)
+PLAYER_LIN_VEL_SLICE = slice(9, 12)
+PLAYER_ANG_VEL_SLICE = slice(12, 15)
+PLAYER_DEMO_INDEX = 33
+PLAYER_ON_GROUND_INDEX = 34
+PLAYER_BALL_TOUCH_INDEX = 35
+PLAYER_HAS_FLIP_INDEX = 36
+PLAYER_BOOST_INDEX = 37
+
 
 class NextoObsBuilder(BatchedObsBuilder):
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
@@ -278,17 +289,17 @@ class NextoObsBuilder(BatchedObsBuilder):
                              players_start_index + i * player_length: players_start_index + (i + 1) * player_length]
 
             kv[i, :, i, IS_SELF] = 1
-            kv[:, :, i, POS] = encoded_player[:, 2: 5]  # TODO constants for these indices
-            kv[:, :, i, LIN_VEL] = encoded_player[:, 9: 12]
-            quats = encoded_player[:, 5: 9]
+            kv[:, :, i, POS] = encoded_player[:, PLAYER_POS_SLICE]
+            kv[:, :, i, LIN_VEL] = encoded_player[:, PLAYER_LIN_VEL_SLICE]
+            quats = encoded_player[:, PLAYER_QUAT_SLICE]
             rot_mtx = self._quats_to_rot_mtx(quats)
             kv[:, :, i, FW] = rot_mtx[:, :, 0]
             kv[:, :, i, UP] = rot_mtx[:, :, 2]
-            kv[:, :, i, ANG_VEL] = encoded_player[:, 12: 15]
-            kv[:, :, i, BOOST] = encoded_player[:, 37]
-            kv[:, :, i, DEMO] = encoded_player[:, 33]  # FIXME demo timer
-            kv[:, :, i, ON_GROUND] = encoded_player[:, 34]
-            kv[:, :, i, HAS_FLIP] = encoded_player[:, 36]
+            kv[:, :, i, ANG_VEL] = encoded_player[:, PLAYER_ANG_VEL_SLICE]
+            kv[:, :, i, BOOST] = encoded_player[:, PLAYER_BOOST_INDEX]
+            kv[:, :, i, DEMO] = encoded_player[:, PLAYER_DEMO_INDEX]  # FIXME demo timer
+            kv[:, :, i, ON_GROUND] = encoded_player[:, PLAYER_ON_GROUND_INDEX]
+            kv[:, :, i, HAS_FLIP] = encoded_player[:, PLAYER_HAS_FLIP_INDEX]
 
         kv[teams == 1] *= self._invert
         kv[np.argwhere(teams == 1), ..., (IS_MATE, IS_OPP)] = kv[
