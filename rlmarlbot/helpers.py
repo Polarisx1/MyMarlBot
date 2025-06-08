@@ -42,3 +42,40 @@ def clear_lines(lines):
     
 def clear_screen():
      print("\033[2J\033[H", end="")
+
+
+from pkg_resources import get_distribution, parse_version
+
+
+def check_rlsdk_version(min_version: str = "0.4.2") -> str:
+    """Ensure that the installed rlsdk-python meets the minimum version.
+
+    Parameters
+    ----------
+    min_version : str
+        Minimum required version string.
+
+    Returns
+    -------
+    str
+        The installed version of rlsdk-python.
+
+    Raises
+    ------
+    RuntimeError
+        If rlsdk-python is missing or the version is too old.
+    """
+
+    try:
+        installed_version = get_distribution("rlsdk-python").version
+    except Exception:
+        raise RuntimeError(
+            "rlsdk-python is not installed. Please install it with 'pip install rlsdk-python'."
+        )
+
+    if parse_version(installed_version) < parse_version(min_version):
+        raise RuntimeError(
+            f"rlsdk-python>={min_version} is required, but {installed_version} is installed."
+        )
+
+    return installed_version

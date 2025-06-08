@@ -34,6 +34,7 @@ import signal
 from helpers import (
     serialize_to_json,
     clear_screen,
+    check_rlsdk_version,
 )
 import argparse
 from art import *
@@ -63,6 +64,7 @@ class RLMarlbot:
         debug=False,
         nexto_beta=1.0,
     ):
+        check_rlsdk_version("0.4.2")
         just_fix_windows_console()
 
         tprint("RLMarlbot")
