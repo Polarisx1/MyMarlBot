@@ -104,6 +104,29 @@ class MemoryWriter:
         self.h_process = kernel32.OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, False, pid)
         return bool(self.h_process)
 
+    def auto_open(self, process_names=None) -> bool:
+        """Try to attach to any known Rocket League process.
+
+        Parameters
+        ----------
+        process_names : list[str] | None
+            List of executable names to search for. If ``None`` a default list
+            of common Rocket League executables is used.
+
+        Returns
+        -------
+        bool
+            ``True`` if a process was successfully attached, ``False`` otherwise.
+        """
+        if process_names is None:
+            process_names = ["RocketLeague.exe", "RocketLeague"]
+
+        for name in process_names:
+            if self.open_process(name):
+                return True
+
+        return False
+
     def start(self):
         if self.h_process and not self.running:
             self.running = True

@@ -83,6 +83,25 @@ public:
         }
     }
 
+    bool auto_open(py::object processNamesObj = py::none()) {
+        std::vector<std::string> processNames;
+        if (!processNamesObj.is_none()) {
+            for (auto item : processNamesObj) {
+                processNames.push_back(item.cast<std::string>());
+            }
+        } else {
+            processNames = {"RocketLeague.exe", "RocketLeague"};
+        }
+
+        for (const auto& name : processNames) {
+            if (open_process(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void start() {
         if (hProcess && !running) {
             running = true;
@@ -140,6 +159,7 @@ PYBIND11_MODULE(memory_writer, m) {
         .def(py::init<>())
         .def("open_process", &MemoryWriter::open_process)
         .def("open_process_by_id", &MemoryWriter::open_process_by_id)
+        .def("auto_open", &MemoryWriter::auto_open, py::arg("process_names") = py::none())
         .def("start", &MemoryWriter::start)
         .def("stop", &MemoryWriter::stop)
         .def("set_memory_data", &MemoryWriter::set_memory_data);
