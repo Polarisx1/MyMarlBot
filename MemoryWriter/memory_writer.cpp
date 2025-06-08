@@ -30,17 +30,39 @@ public:
         HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
         if (snapshot == INVALID_HANDLE_VALUE) return false;
 
+        DWORD exactPID = 0;
+        DWORD partialPID = 0;
+        std::string partialName;
+
         if (Process32First(snapshot, &entry)) {
             do {
                 std::string currentName = ConvertWideToUTF8(entry.szExeFile);
                 if (_stricmp(currentName.c_str(), processName.c_str()) == 0) {
-                    hProcess = OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, entry.th32ProcessID);
-                    CloseHandle(snapshot);
+                    exactPID = entry.th32ProcessID;
+                    break;
+                }
 
-                    py::print("Process opened: ", processName);
-                    return hProcess != nullptr;
+                if (partialPID == 0) {
+                    std::string currentLower = currentName;
+                    std::string targetLower = processName;
+                    std::transform(currentLower.begin(), currentLower.end(), currentLower.begin(), ::tolower);
+                    std::transform(targetLower.begin(), targetLower.end(), targetLower.begin(), ::tolower);
+                    if (currentLower.find(targetLower) != std::string::npos) {
+                        partialPID = entry.th32ProcessID;
+                        partialName = currentName;
+                    }
                 }
             } while (Process32Next(snapshot, &entry));
+        }
+
+        DWORD pidToOpen = exactPID != 0 ? exactPID : partialPID;
+        if (pidToOpen != 0) {
+            if (exactPID == 0 && !partialName.empty()) {
+                py::print("Process '", processName, "' not found exactly. Using first match '", partialName, "'.");
+            }
+            hProcess = OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, pidToOpen);
+            CloseHandle(snapshot);
+            return hProcess != nullptr;
         }
 
         CloseHandle(snapshot);
