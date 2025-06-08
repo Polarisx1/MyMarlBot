@@ -25,7 +25,7 @@ from rlbot.agents.base_agent import SimpleControllerState
 from prompt_toolkit import prompt
 import struct
 from threading import Event
-from memory_writer import memory_writer
+from rlmarlbot.memory_writer import MemoryWriter
 from colorama import Fore, Back, Style, just_fix_windows_console
 import json
 from rlmarlbot.map import MiniMap
@@ -172,7 +172,7 @@ class RLMarlbot:
 
         print(Fore.LIGHTBLUE_EX + "Instanciating memory writer..." + Style.RESET_ALL)
 
-        self.mw = memory_writer.MemoryWriter()
+        self.mw = MemoryWriter()
 
         if self.pid:
             self.mw.open_process_by_id(self.pid)
