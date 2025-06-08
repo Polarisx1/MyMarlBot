@@ -453,8 +453,9 @@ class RLMarlbot:
                 bytearray_input = self.controller_to_input(controller_state)
                 
 
-                # Construct the input address by adding an offset
-                input_address = self.local_player_controller.address + 0x0990
+                # Automatically resolve the inputs address via the SDK
+                # PlayerController -> Car -> VehicleInputs
+                input_address = self.local_car.get_inputs().address
 
                 # Write the input to memory
 
