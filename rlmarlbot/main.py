@@ -1,6 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 from rlsdk_python import RLSDK, EventTypes, GameEvent, PRI, Ball, Car, PROCESS_NAME
+from rlsdk_python import sdk as rlsdk_sdk
 from rlsdk_python.events import EventPlayerTick, EventRoundActiveStateChanged
 from nexto.bot import Nexto
 from seer.bot import Seer
@@ -150,15 +151,57 @@ class RLMarlbot:
                 print(Fore.RED + "Invalid bot selected" + Style.RESET_ALL)
                 exit()
 
+
         self.start()
+
+    def _auto_resolve_offsets(self):
+        """Attempt automatic offset resolution using RLSDK utilities."""
+        try:
+            temp_sdk = RLSDK.__new__(RLSDK)
+            temp_sdk.pid = self.pid
+            temp_sdk.config = {"gnames_offset": None, "gobjects_offset": None}
+            temp_sdk.pm = rlsdk_sdk.pymem.Pymem(
+                self.pid if self.pid else PROCESS_NAME
+            )
+            temp_sdk.resolve_offsets()
+            with open("sdk_config.json", "w") as f:
+                json.dump(temp_sdk.config, f, indent=4)
+            print(
+                Fore.LIGHTGREEN_EX
+                + "Offsets resolved automatically"
+                + Style.RESET_ALL
+            )
+            return True
+        except Exception as e:
+            print(
+                Fore.RED
+                + "Automatic offset resolution failed: "
+                + str(e)
+                + Style.RESET_ALL
+            )
+            return False
 
     def start(self):
         print(Fore.LIGHTBLUE_EX + "Starting SDK..." + Style.RESET_ALL)
-        try:
-            self.sdk = RLSDK(hook_player_tick=True, pid=self.pid)
-        except Exception as e:
-            print(Fore.RED + "Failed to start SDK: ", e, Style.RESET_ALL)
-            exit()
+        while True:
+            try:
+                self.sdk = RLSDK(hook_player_tick=True, pid=self.pid)
+                break
+            except Exception as e:
+                print(Fore.RED + "Failed to start SDK: ", e, Style.RESET_ALL)
+                if not self._auto_resolve_offsets():
+                    print(
+                        Fore.LIGHTYELLOW_EX
+                        + "Retrying to start SDK in 5 seconds..."
+                        + Style.RESET_ALL
+                    )
+                    time.sleep(5)
+                else:
+                    print(
+                        Fore.LIGHTYELLOW_EX
+                        + "Retrying SDK initialization..."
+                        + Style.RESET_ALL
+                    )
 
         if self.minimap:
 
