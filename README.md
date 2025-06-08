@@ -45,7 +45,7 @@ options:
 git clone https://github.com/Polarisx1/MyMarlBot
 
 # Change directory
-cd RLMarlbot
+cd MyMarlBot
 
 # Install dependencies
 poetry install
@@ -55,8 +55,8 @@ pip install rlsdk-python==0.4.2
 # Enter poetry shell
 poetry shell
 
-# Run the game before running the script 
-python .\rlmarlbot\main.py
+# Run the game before running the script
+python -m rlmarlbot.main
 ```
 
 ## Build binary from source
