@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import torch
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
