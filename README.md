@@ -79,6 +79,9 @@ poetry install
 ## Memory Writer
 Source of the memory writer are in the folder `MemoryWriter`.
 The compiled binary is here:  `rlmarlbot/memory_writer/memory_writer.pyd` so you don't need to compile the memory writer yourself because the binary is versioned.
+`open_process` now searches all running processes and will fall back to the first
+process whose executable name contains the provided string (case-insensitive) if
+no exact match is found. A message is printed when such a partial match is used.
 
 ## How does it works ?
 

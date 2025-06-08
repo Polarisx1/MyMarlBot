@@ -58,26 +58,47 @@ class MemoryWriter:
         self.lock = threading.Lock()
 
     def open_process(self, process_name: str) -> bool:
+        process_name_l = process_name.lower()
         entry = PROCESSENTRY32()
         entry.dwSize = ctypes.sizeof(PROCESSENTRY32)
         snapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
         if snapshot == INVALID_HANDLE_VALUE:
             return False
-        found = False
+
+        exact_pid = None
+        partial_pid = None
+        partial_name = None
+
         if kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):
             while True:
-                if entry.szExeFile.lower() == process_name.lower():
-                    self.h_process = kernel32.OpenProcess(
-                        PROCESS_VM_WRITE | PROCESS_VM_OPERATION,
-                        False,
-                        entry.th32ProcessID,
-                    )
-                    found = bool(self.h_process)
+                exe_name = entry.szExeFile
+                exe_name_l = exe_name.lower()
+
+                if exe_name_l == process_name_l:
+                    exact_pid = entry.th32ProcessID
                     break
+
+                if partial_pid is None and process_name_l in exe_name_l:
+                    partial_pid = entry.th32ProcessID
+                    partial_name = exe_name
+
                 if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
                     break
+
+        selected_pid = exact_pid if exact_pid is not None else partial_pid
+        if selected_pid is not None:
+            if exact_pid is None and partial_name is not None:
+                print(
+                    f"Process '{process_name}' not found exactly. Using first match '{partial_name}'."
+                )
+            self.h_process = kernel32.OpenProcess(
+                PROCESS_VM_WRITE | PROCESS_VM_OPERATION,
+                False,
+                selected_pid,
+            )
+
         kernel32.CloseHandle(snapshot)
-        return bool(found)
+        return bool(self.h_process)
 
     def open_process_by_id(self, pid: int) -> bool:
         self.h_process = kernel32.OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, False, pid)
