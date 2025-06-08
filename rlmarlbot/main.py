@@ -174,10 +174,19 @@ class RLMarlbot:
 
         self.mw = MemoryWriter()
 
+        attached = False
         if self.pid:
-            self.mw.open_process_by_id(self.pid)
+            attached = self.mw.open_process_by_id(self.pid)
         else:
-            self.mw.open_process(PROCESS_NAME)
+            attached = self.mw.auto_open()
+
+        if not attached:
+            print(
+                Fore.RED
+                + "Could not find Rocket League process. Please start the game or specify a PID."
+                + Style.RESET_ALL
+            )
+            exit()
 
         self.write_running = False
 
