@@ -74,7 +74,7 @@ poetry install
 
 ## Memory Writer
 Source of the memory writer are in the folder `MemoryWriter`.
-The compiled binary is here:  `rlnexto_python/memory_writer/memory_writer.pyd` so you don't need to compile the memory writer yourself because the binary is versioned.
+The compiled binary is here:  `rlmarlbot/memory_writer/memory_writer.pyd` so you don't need to compile the memory writer yourself because the binary is versioned.
 
 ## How does it works ?
 
