@@ -103,6 +103,8 @@ class MemoryWriter:
             self.data = data
 
     def _write_loop(self):
+        error_count = 0
+        MAX_ERRORS = 10
         while self.running:
             with self.lock:
                 addr = self.address
@@ -110,7 +112,26 @@ class MemoryWriter:
             if addr and buf:
                 size = len(buf)
                 written = ctypes.c_size_t()
-                kernel32.WriteProcessMemory(self.h_process, ctypes.c_void_p(addr), buf, size, ctypes.byref(written))
+                success = kernel32.WriteProcessMemory(
+                    self.h_process,
+                    ctypes.c_void_p(addr),
+                    buf,
+                    size,
+                    ctypes.byref(written),
+                )
+                if not success or written.value != size:
+                    err = ctypes.get_last_error()
+                    print("WriteProcessMemory failed with error", err)
+                    error_count += 1
+                    if error_count >= MAX_ERRORS:
+                        print("Stopping writer after consecutive errors")
+                        self.running = False
+                        break
+                else:
+                    error_count = 0
+            else:
+                time.sleep(0.001)
+                continue
             time.sleep(0.001)
 
     def __del__(self):

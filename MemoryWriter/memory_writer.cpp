@@ -98,6 +98,8 @@ private:
 
     void write_memory() {
         SIZE_T bytesWritten;
+        int error_count = 0;
+        const int MAX_ERRORS = 10;
         while (running) {
             std::string local_data;
             uintptr_t local_address;
@@ -108,7 +110,31 @@ private:
                 local_address = address;
             }
 
-            WriteProcessMemory(hProcess, (LPVOID)local_address, local_data.c_str(), local_data.size(), &bytesWritten);
+            if (local_address && !local_data.empty()) {
+                BOOL ok = WriteProcessMemory(hProcess, (LPVOID)local_address, local_data.c_str(), local_data.size(), &bytesWritten);
+                if (!ok || bytesWritten != local_data.size()) {
+                    DWORD err = GetLastError();
+                    {
+                        py::gil_scoped_acquire gil;
+                        py::print("WriteProcessMemory failed with error", err);
+                    }
+                    if (++error_count >= MAX_ERRORS) {
+                        {
+                            py::gil_scoped_acquire gil;
+                            py::print("Stopping writer after consecutive errors");
+                        }
+                        running = false;
+                        break;
+                    }
+                } else {
+                    error_count = 0;
+                }
+            } else {
+                // No data to write; sleep briefly to avoid busy loop
+                Sleep(1);
+            }
+
+            Sleep(1);
         }
     }
 };
