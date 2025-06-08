@@ -15,12 +15,8 @@ I recommend to look at the RLSDK-Python repository to understand how the bot wor
 - RocketLeague Epic (x64) running
 - Python 3.11.0 (x64)
 - Pyinstaller if you want to build the exe
-  codex/update-readme-with-rlsdk-installation-steps
 - RLSDK (rlsdk-python==0.4.2) is required to run the bot
-
-=======
 - PyTorch 2.2.2 (used by all bots)
-  master
 
 ## CLI Options
 
@@ -46,7 +42,7 @@ options:
 
 ```bash	
 # Clone the repository
-git clone https://github.com/MarlBurroW/RLMarlbot
+git clone https://github.com/Polarisx1/MyMarlBot
 
 # Change directory
 cd RLMarlbot
@@ -100,3 +96,6 @@ https://discord.gg/RLMarlbot
 - **RLBot**: For having created a standard interface for bot creation.
 - **Bardak**: For testing
 - **AScriver**: Contribute to improve the RLSDK
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -71,7 +71,7 @@ class RLMarlbot:
         print(Fore.WHITE + "Run with --help for command line options" + Style.RESET_ALL)
         print(
             Fore.LIGHTYELLOW_EX
-            + "Please, give me a star on GitHub: https://github.com/MarlBurroW/RLMarlbot, this work takes a lot of time and effort"
+            + "Please, give me a star on GitHub: https://github.com/Polarisx1/MyMarlBot"
             + Style.RESET_ALL
         )
 
