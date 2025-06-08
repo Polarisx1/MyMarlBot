@@ -58,6 +58,10 @@ class MemoryWriter:
         self.lock = threading.Lock()
 
     def open_process(self, process_name: str) -> bool:
+        if self.h_process:
+            kernel32.CloseHandle(self.h_process)
+            self.h_process = None
+
         process_name_l = process_name.lower()
         entry = PROCESSENTRY32()
         entry.dwSize = ctypes.sizeof(PROCESSENTRY32)
@@ -102,6 +106,10 @@ class MemoryWriter:
         return found
 
     def open_process_by_id(self, pid: int) -> bool:
+        if self.h_process:
+            kernel32.CloseHandle(self.h_process)
+            self.h_process = None
+
         self.h_process = kernel32.OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, False, pid)
         return bool(self.h_process)
 
