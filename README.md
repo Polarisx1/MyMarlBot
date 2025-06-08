@@ -15,8 +15,12 @@ I recommend to look at the RLSDK-Python repository to understand how the bot wor
 - RocketLeague Epic (x64) running
 - Python 3.11.0 (x64)
 - Pyinstaller if you want to build the exe
+  codex/update-readme-with-rlsdk-installation-steps
 - RLSDK (rlsdk-python==0.4.2) is required to run the bot
 
+=======
+- PyTorch 2.2.2 (used by all bots)
+  master
 
 ## CLI Options
 
