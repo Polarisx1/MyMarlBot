@@ -1,13 +1,13 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-from rlsdk_python import RLSDK, EventTypes, GameEvent, PRI, Ball, Car, PROCESS_NAME
-from rlsdk_python import sdk as rlsdk_sdk
-from rlsdk_python.events import EventPlayerTick, EventRoundActiveStateChanged
-from rlmarlbot.nexto.bot import Nexto
-from rlmarlbot.seer.bot import Seer
-from rlmarlbot.necto.bot import Necto
-from rlmarlbot.element.bot import Element
-from rlmarlbot.immortal.bot import Immortal
+from rlsdk_python import (
+    RLSDK,
+    EventTypes,
+    GameEvent,
+    PRI,
+    Ball,
+    Car,
+    PROCESS_NAME,
     BallInfo,
     Vector3,
     FieldInfoPacket,
@@ -19,6 +19,16 @@ from rlmarlbot.immortal.bot import Immortal
     PlayerInfo,
     BoostPadState,
 )
+
+
+from rlsdk_python import sdk as rlsdk_sdk
+from rlsdk_python.events import EventPlayerTick, EventRoundActiveStateChanged
+from rlmarlbot.nexto.bot import Nexto
+from rlmarlbot.seer.bot import Seer
+from rlmarlbot.necto.bot import Necto
+from rlmarlbot.element.bot import Element
+from rlmarlbot.immortal.bot import Immortal
+
 import sys
 import time
 from rlbot.agents.base_agent import SimpleControllerState
@@ -29,8 +39,8 @@ from rlmarlbot.memory import MemoryWriter
 from colorama import Fore, Back, Style, just_fix_windows_console
 import json
 from rlmarlbot.map import MiniMap
-fimport signal
-from rlmarlbot.helpers import (
+import signal
+fom rlmarlbot.helpers import (
     serialize_to_json,
     clear_screen,
     check_rlsdk_version,
