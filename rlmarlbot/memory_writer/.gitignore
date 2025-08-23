@@ -1,3 +1,6 @@
 memory_writer.pyd.exp
 memory_writer.pyd.lib
 memory_writer.pyd.pdb
+MemoryWriter.exp
+MemoryWriter.lib
+MemoryWriter.pdb
