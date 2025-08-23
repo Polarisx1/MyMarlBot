@@ -1,192 +1,139 @@
-#include <windows.h>
-#include <tlhelp32.h>
-#include <pybind11/pybind11.h>
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <Psapi.h>
+#include <Python.h>
 #include <iostream>
-#include <thread>
-#include <atomic>
+#include <vector>
 #include <string>
-#include <mutex>
-#include <pybind11/gil.h> 
 
-namespace py = pybind11;
-
-std::string ConvertWideToUTF8(const WCHAR* wide) {
-    if (wide == nullptr) return "";
-    int buffer_size = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
-    std::string narrow(buffer_size, 0);
-    WideCharToMultiByte(CP_UTF8, 0, wide, -1, &narrow[0], buffer_size, nullptr, nullptr);
-    return narrow;
-}
-
-class MemoryWriter {
-public:
-    MemoryWriter() : hProcess(nullptr), running(false), address(0) {}
-
-    bool open_process(const std::string& processName) {
-        PROCESSENTRY32 entry;
-        entry.dwSize = sizeof(PROCESSENTRY32);
-        py::print("Opening process ", processName);
-
-        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-        if (snapshot == INVALID_HANDLE_VALUE) return false;
-
-        DWORD exactPID = 0;
-        DWORD partialPID = 0;
-        std::string partialName;
-
-        if (Process32First(snapshot, &entry)) {
-            do {
-                std::string currentName = ConvertWideToUTF8(entry.szExeFile);
-                if (_stricmp(currentName.c_str(), processName.c_str()) == 0) {
-                    exactPID = entry.th32ProcessID;
-                    break;
-                }
-
-                if (partialPID == 0) {
-                    std::string currentLower = currentName;
-                    std::string targetLower = processName;
-                    std::transform(currentLower.begin(), currentLower.end(), currentLower.begin(), ::tolower);
-                    std::transform(targetLower.begin(), targetLower.end(), targetLower.begin(), ::tolower);
-                    if (currentLower.find(targetLower) != std::string::npos) {
-                        partialPID = entry.th32ProcessID;
-                        partialName = currentName;
-                    }
-                }
-            } while (Process32Next(snapshot, &entry));
-        }
-
-        DWORD pidToOpen = exactPID != 0 ? exactPID : partialPID;
-        if (pidToOpen != 0) {
-            if (exactPID == 0 && !partialName.empty()) {
-                py::print("Process '", processName, "' not found exactly. Using first match '", partialName, "'.");
-            }
-            hProcess = OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, pidToOpen);
-            CloseHandle(snapshot);
-            return hProcess != nullptr;
-        }
-
-        CloseHandle(snapshot);
-        py::print("Process not found: ", processName);
-        return false;
-    }
-
-    bool open_process_by_id(DWORD processID) {
-        py::print("Opening process by ID: ", processID);
-        hProcess = OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processID);
-        if (hProcess != nullptr) {
-            py::print("Process opened by ID: ", processID);
-            return true;
-        }
-        else {
-            py::print("Failed to open process by ID: ", processID);
+// --- Pattern scanner helpers ---
+bool DataCompare(const BYTE* data, const BYTE* pattern, const char* mask) {
+    for (; *mask; ++mask, ++data, ++pattern) {
+        if (*mask == 'x' && *data != *pattern) {
             return false;
         }
     }
+    return (*mask) == 0;
+}
 
-    bool auto_open(py::object processNamesObj = py::none()) {
-        std::vector<std::string> processNames;
-        if (!processNamesObj.is_none()) {
-            for (auto item : processNamesObj) {
-                processNames.push_back(item.cast<std::string>());
-            }
-        } else {
-            processNames = {"RocketLeague.exe", "RocketLeague"};
-        }
-
-        for (const auto& name : processNames) {
-            if (open_process(name)) {
-                return true;
+uintptr_t PatternScan(HANDLE hProc, uintptr_t base, SIZE_T size, const char* pattern, const char* mask) {
+    std::vector<BYTE> buffer(size);
+    SIZE_T bytesRead;
+    if (ReadProcessMemory(hProc, (LPCVOID)base, buffer.data(), size, &bytesRead)) {
+        for (SIZE_T i = 0; i < bytesRead; i++) {
+            if (DataCompare(buffer.data() + i, (BYTE*)pattern, mask)) {
+                return base + i;
             }
         }
+    }
+    return 0;
+}
 
+// --- Globals ---
+HANDLE gProcess = nullptr;
+uintptr_t gInputStruct = 0;
+
+// Attach to RocketLeague.exe
+bool AttachProcess(const wchar_t* procName, DWORD& pid, uintptr_t& base, DWORD& moduleSize) {
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return false;
+
+    PROCESSENTRY32W entry{};
+    entry.dwSize = sizeof(entry);
+
+    if (Process32FirstW(snapshot, &entry)) {
+        do {
+            if (!_wcsicmp(entry.szExeFile, procName)) {
+                pid = entry.th32ProcessID;
+                CloseHandle(snapshot);
+                gProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+                if (!gProcess) return false;
+
+                HMODULE hMods[1024];
+                DWORD cbNeeded;
+                if (EnumProcessModules(gProcess, hMods, sizeof(hMods), &cbNeeded)) {
+                    base = (uintptr_t)hMods[0];
+                    MODULEINFO modInfo;
+                    GetModuleInformation(gProcess, hMods[0], &modInfo, sizeof(modInfo));
+                    moduleSize = modInfo.SizeOfImage;
+                    return true;
+                }
+            }
+        } while (Process32NextW(snapshot, &entry));
+    }
+
+    CloseHandle(snapshot);
+    return false;
+}
+
+// Example: Scan for input struct pattern
+bool FindOffsets() {
+    DWORD pid = 0;
+    uintptr_t base = 0;
+    DWORD size = 0;
+
+    if (!AttachProcess(L"RocketLeague.exe", pid, base, size)) {
+        std::cerr << "[MemoryWriter] Could not attach to RocketLeague.exe\n";
         return false;
     }
 
-    void start() {
-        if (hProcess && !running) {
-            running = true;
-            worker = std::thread(&MemoryWriter::write_memory, this);
-        }
+    // Replace with correct pattern + mask for your input struct
+    const char* pattern = "\x48\x8B\x05\x00\x00\x00\x00\x48\x8B\x48\x08";
+    const char* mask    = "xxx????xxxx";
+
+    gInputStruct = PatternScan(gProcess, base, size, pattern, mask);
+
+    if (gInputStruct) {
+        std::cout << "[MemoryWriter] Found InputStruct at 0x" << std::hex << gInputStruct << "\n";
+        return true;
+    } else {
+        std::cerr << "[MemoryWriter] Failed to locate InputStruct via pattern scan\n";
+        return false;
+    }
+}
+
+// --- Exposed to Python ---
+static PyObject* mw_write(PyObject* self, PyObject* args) {
+    PyObject* dict;
+    if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &dict)) {
+        return nullptr;
     }
 
-    void stop() {
-        running = false;
-        if (worker.joinable()) {
-            worker.join();
-        }
+    if (!gProcess || !gInputStruct) {
+        PyErr_SetString(PyExc_RuntimeError, "No valid process/offsets (Rocket League not attached).");
+        return nullptr;
     }
 
-    void set_memory_data(uintptr_t new_address, const std::string& new_data) {
-        std::lock_guard<std::mutex> lock(data_mutex);
-        address = new_address;
-        data = new_data;
+    // Example: extract throttle & steer from Python dict
+    PyObject* pyThrottle = PyDict_GetItemString(dict, "throttle");
+    PyObject* pySteer    = PyDict_GetItemString(dict, "steer");
+
+    float throttle = pyThrottle ? (float)PyFloat_AsDouble(pyThrottle) : 0.0f;
+    float steer    = pySteer ? (float)PyFloat_AsDouble(pySteer) : 0.0f;
+
+    // Replace with actual WriteProcessMemory call to RL struct
+    BOOL success = WriteProcessMemory(gProcess, (LPVOID)(gInputStruct), &throttle, sizeof(throttle), nullptr);
+
+    if (!success) {
+        PyErr_SetString(PyExc_RuntimeError, "WriteProcessMemory failed.");
+        return nullptr;
     }
 
-    ~MemoryWriter() {
-        stop();
-        if (hProcess) {
-            CloseHandle(hProcess);
-        }
-    }
+    Py_RETURN_NONE;
+}
 
-private:
-    HANDLE hProcess;
-    std::atomic<bool> running;
-    std::thread worker;
-    uintptr_t address;
-    std::string data;
-    std::mutex data_mutex;
-
-    void write_memory() {
-        SIZE_T bytesWritten;
-        int error_count = 0;
-        const int MAX_ERRORS = 10;
-        while (running) {
-            std::string local_data;
-            uintptr_t local_address;
-
-            {
-                std::lock_guard<std::mutex> lock(data_mutex);
-                local_data = data;
-                local_address = address;
-            }
-
-            if (local_address && !local_data.empty()) {
-                BOOL ok = WriteProcessMemory(hProcess, (LPVOID)local_address, local_data.c_str(), local_data.size(), &bytesWritten);
-                if (!ok || bytesWritten != local_data.size()) {
-                    DWORD err = GetLastError();
-                    {
-                        py::gil_scoped_acquire gil;
-                        py::print("WriteProcessMemory failed with error", err);
-                    }
-                    if (++error_count >= MAX_ERRORS) {
-                        {
-                            py::gil_scoped_acquire gil;
-                            py::print("Stopping writer after consecutive errors");
-                        }
-                        running = false;
-                        break;
-                    }
-                } else {
-                    error_count = 0;
-                }
-            } else {
-                // No data to write; sleep briefly to avoid busy loop
-                Sleep(1);
-            }
-
-            Sleep(1);
-        }
-    }
+static PyMethodDef MWMethods[] = {
+    {"write", mw_write, METH_VARARGS, "Write inputs to Rocket League memory."},
+    {nullptr, nullptr, 0, nullptr}
 };
 
-PYBIND11_MODULE(memory_writer, m) {
-    py::class_<MemoryWriter>(m, "MemoryWriter")
-        .def(py::init<>())
-        .def("open_process", &MemoryWriter::open_process)
-        .def("open_process_by_id", &MemoryWriter::open_process_by_id)
-        .def("auto_open", &MemoryWriter::auto_open, py::arg("process_names") = py::none())
-        .def("start", &MemoryWriter::start)
-        .def("stop", &MemoryWriter::stop)
-        .def("set_memory_data", &MemoryWriter::set_memory_data);
+static struct PyModuleDef mwmodule = {
+    PyModuleDef_HEAD_INIT, "memory_writer", nullptr, -1, MWMethods
+};
+
+PyMODINIT_FUNC PyInit_memory_writer(void) {
+    if (!FindOffsets()) {
+        std::cerr << "[MemoryWriter] Offsets not found, module loaded in dry-run mode.\n";
+    }
+    return PyModule_Create(&mwmodule);
 }
