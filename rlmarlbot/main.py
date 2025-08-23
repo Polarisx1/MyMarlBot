@@ -25,12 +25,11 @@ from rlbot.agents.base_agent import SimpleControllerState
 from prompt_toolkit import prompt
 import struct
 from threading import Event
-from rlmarlbot.memory_writer import MemoryWriter
+from rlmarlbot.memory import MemoryWriter
 from colorama import Fore, Back, Style, just_fix_windows_console
 import json
 from rlmarlbot.map import MiniMap
-from rlmarlbot.memory MemoryWriter MemoryWriter
-import signal
+fimport signal
 from rlmarlbot.helpers import (
     serialize_to_json,
     clear_screen,
